@@ -1,0 +1,50 @@
+name: kolarc_makina_takip # Projenizin adı (küçük harfler, alt çizgiler)
+description: Kolarc Makina Takip Uygulaması # Projenizin kısa açıklaması
+# pub.dev'e yanlışlıkla yayınlanmasını önlemek için aşağıdaki satır
+publish_to: 'none' # pub.dev'de yayınlamak istemiyorsanız bu satırı tutun
+
+# Uygulamanızın sürümü ve yapı numarası.
+version: 1.0.0+1 # Sürüm: üç nokta ile ayrılmış üç sayı + isteğe bağlı yapı numarası
+
+environment:
+  sdk: ^3.0.0 # Projenizin Dart SDK sürüm gereksinimi
+
+dependencies:
+  flutter:
+    sdk: flutter # Flutter SDK'sını bağımlılık olarak ekler
+
+  # Gerekirse eklemek istediğiniz paketleri buraya yazabilirsiniz (örneğin: shared_preferences, file_picker, d3, three, matter, anime)
+  # Örneğin daha önce bahsettiğimiz gibi;
+  shared_preferences: ^2.2.0 # Uygulama ayarlarını kaydetmek için
+  file_picker: ^10.3.10 # Dosya seçmek için
+  device_preview: ^1.3.1
+  pdf: ^3.12.0
+  printing: ^5.14.3
+  firebase_core: ^4.6.0
+  cloud_firestore: ^6.2.0
+  share_plus: ^12.0.2
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter # Flutter test paketini bağımlılık olarak ekler
+
+  # flutter_lints paketini kullanarak önerilen kodlama kurallarını uygulayabilirsiniz.
+  flutter_lints: ^2.0.0 # flutter_lints paketi, daha iyi kodlama uygulamalarını teşvik etmek için önerilen bir lint seti içerir.
+
+flutter:
+  # Uygulamanızda Material Icons yazı tipinin kullanılmasını sağlar.
+  uses-material-design: true
+
+  # Uygulamanıza varlıklar eklemek için assets bölümünü kullanın.
+  # Daha önce oluşturduğumuz kolarc_background.png resmini assets klasöründe tanımlıyoruz.
+  assets:
+    - assets/kolarc_background.png # Tireden sonra bir boşluk bırakmayı unutmayın!
+
+  # İsterseniz özel yazı tipleri de ekleyebilirsiniz.
+  # fonts:
+  #   - family: KolarcFont
+  #     fonts:
+  #       - asset: fonts/KolarcFont-Regular.ttf
+  #       - asset: fonts/KolarcFont-Bold.ttf
+  #         weight: 700
