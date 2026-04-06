@@ -92,12 +92,17 @@ class Makina {
 }
 
 class Malzeme {
-  String kod; String raf; String sira; String depoTipi; String eklenmeTarihi;
-  Malzeme({required this.kod, required this.raf, required this.sira, required this.depoTipi, required this.eklenmeTarihi});
-  Map<String, dynamic> toJson() => {'kod': kod, 'raf': raf, 'sira': sira, 'depoTipi': depoTipi, 'eklenmeTarihi': eklenmeTarihi};
+  String kod; String ad; String depoTipi; String eklenmeTarihi;
+  Malzeme({required this.kod, required this.ad, required this.depoTipi, required this.eklenmeTarihi});
+  Map<String, dynamic> toJson() => {'kod': kod, 'ad': ad, 'depoTipi': depoTipi, 'eklenmeTarihi': eklenmeTarihi};
   factory Malzeme.fromJson(Map<String, dynamic>? json) {
-    if (json == null) return Malzeme(kod: 'Bilinmiyor', raf: '-', sira: '-', depoTipi: 'SMD', eklenmeTarihi: 'Bilinmiyor');
-    return Malzeme(kod: json['kod']?.toString() ?? 'Bilinmiyor', raf: json['raf']?.toString() ?? '-', sira: json['sira']?.toString() ?? '-', depoTipi: json['depoTipi']?.toString() ?? 'SMD', eklenmeTarihi: json['eklenmeTarihi']?.toString() ?? 'Eski Kayıt');
+    if (json == null) return Malzeme(kod: 'Bilinmiyor', ad: 'İsimsiz', depoTipi: 'SMD Raf', eklenmeTarihi: 'Bilinmiyor');
+    return Malzeme(
+      kod: json['kod']?.toString() ?? 'Bilinmiyor', 
+      ad: json['ad']?.toString() ?? (json['raf'] != null ? json['raf'].toString() : 'İsimsiz'), 
+      depoTipi: json['depoTipi']?.toString() ?? 'SMD Raf', 
+      eklenmeTarihi: json['eklenmeTarihi']?.toString() ?? 'Eski Kayıt'
+    );
   }
 }
 
@@ -112,7 +117,14 @@ class OzelMakinaBakim {
 }
 
 // --- GLOBAL DEĞİŞKENLER ---
-List<Kart> tumKartlarDeposu = []; List<Makina> tumMakinalar = []; List<Kart> arsivlenmisKartlar = []; List<Makina> arsivlenmisMakinalar = []; List<Malzeme> smdMalzemeler = []; List<Malzeme> bacakliMalzemeler = []; List<Malzeme> arsivlenmisMalzemeler = [];
+String gecerliAdminSifresi = '1234'; // Varsayılan şifre
+
+List<Kart> tumKartlarDeposu = []; List<Makina> tumMakinalar = []; List<Kart> arsivlenmisKartlar = []; List<Makina> arsivlenmisMakinalar = []; 
+List<Malzeme> smdMalzemeler = []; 
+List<Malzeme> bacakliMalzemeler = []; 
+List<Malzeme> smdDepoMalzemeler = []; 
+List<Malzeme> bacakliDepoMalzemeler = []; 
+List<Malzeme> arsivlenmisMalzemeler = [];
 
 List<OzelMakinaBakim> ozelBakimListesi = [
   OzelMakinaBakim(ad: 'Pota Makinası', sonBakim: 'Veri Bekleniyor', siradakiBakim: 'Veri Bekleniyor', durum: 'Normal'),
@@ -129,8 +141,11 @@ Future<void> verileriKaydet() async {
   await prefs.setString('arsivliMakinalar', jsonEncode(arsivlenmisMakinalar.map((m) => m.toJson()).toList())); 
   await prefs.setString('smdMalzemeler', jsonEncode(smdMalzemeler.map((m) => m.toJson()).toList())); 
   await prefs.setString('bacakliMalzemeler', jsonEncode(bacakliMalzemeler.map((m) => m.toJson()).toList())); 
+  await prefs.setString('smdDepoMalzemeler', jsonEncode(smdDepoMalzemeler.map((m) => m.toJson()).toList())); 
+  await prefs.setString('bacakliDepoMalzemeler', jsonEncode(bacakliDepoMalzemeler.map((m) => m.toJson()).toList())); 
   await prefs.setString('arsivliMalzemeler', jsonEncode(arsivlenmisMalzemeler.map((m) => m.toJson()).toList()));
   await prefs.setString('ozelBakimListesi', jsonEncode(ozelBakimListesi.map((m) => m.toJson()).toList()));
+  await prefs.setString('adminSifresi', gecerliAdminSifresi); // Şifreyi de kaydet
 }
 
 // --- UYGULAMA ANA YAPISI ---
@@ -195,6 +210,9 @@ class _AcilisEkraniState extends State<AcilisEkrani> {
       bool isDark = prefs.getBool('isDarkTheme') ?? false;
       temaYoneticisi.value = isDark ? ThemeMode.dark : ThemeMode.light;
       bakimPaneliniGoster.value = prefs.getBool('bakimPaneliGoster') ?? false;
+      
+      // Şifreyi hafızadan al, yoksa 1234 kalır
+      gecerliAdminSifresi = prefs.getString('adminSifresi') ?? '1234';
 
       if (prefs.getString('kayitliKartlar') != null) { tumKartlarDeposu = List<Kart>.from(jsonDecode(prefs.getString('kayitliKartlar')!).map((x) => Kart.fromJson(x))); }
       if (prefs.getString('kayitliMakinalar') != null) { tumMakinalar = List<Makina>.from(jsonDecode(prefs.getString('kayitliMakinalar')!).map((x) => Makina.fromJson(x))); }
@@ -202,6 +220,8 @@ class _AcilisEkraniState extends State<AcilisEkrani> {
       if (prefs.getString('arsivliMakinalar') != null) { arsivlenmisMakinalar = List<Makina>.from(jsonDecode(prefs.getString('arsivliMakinalar')!).map((x) => Makina.fromJson(x))); }
       if (prefs.getString('smdMalzemeler') != null) { smdMalzemeler = List<Malzeme>.from(jsonDecode(prefs.getString('smdMalzemeler')!).map((x) => Malzeme.fromJson(x))); }
       if (prefs.getString('bacakliMalzemeler') != null) { bacakliMalzemeler = List<Malzeme>.from(jsonDecode(prefs.getString('bacakliMalzemeler')!).map((x) => Malzeme.fromJson(x))); }
+      if (prefs.getString('smdDepoMalzemeler') != null) { smdDepoMalzemeler = List<Malzeme>.from(jsonDecode(prefs.getString('smdDepoMalzemeler')!).map((x) => Malzeme.fromJson(x))); }
+      if (prefs.getString('bacakliDepoMalzemeler') != null) { bacakliDepoMalzemeler = List<Malzeme>.from(jsonDecode(prefs.getString('bacakliDepoMalzemeler')!).map((x) => Malzeme.fromJson(x))); }
       if (prefs.getString('arsivliMalzemeler') != null) { arsivlenmisMalzemeler = List<Malzeme>.from(jsonDecode(prefs.getString('arsivliMalzemeler')!).map((x) => Malzeme.fromJson(x))); }
       if (prefs.getString('ozelBakimListesi') != null) { ozelBakimListesi = List<OzelMakinaBakim>.from(jsonDecode(prefs.getString('ozelBakimListesi')!).map((x) => OzelMakinaBakim.fromJson(x))); }
     } catch (e) { }
@@ -273,20 +293,21 @@ class KullanimKilavuzuSayfasi extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: kKolarcBlue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: kKolarcBlue.withValues(alpha: 0.3))),
-            child: Column(
+            child: const Column(
               children: [
-                const Icon(Icons.info_outline, size: 40, color: kKolarcBlue),
-                const SizedBox(height: 10),
-                const Text('Makina Takip Sistemine Hoş Geldiniz!', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 5),
-                Text('Bu yazılım, fabrikanızdaki makinaları, kartları, malzemeleri ve bakım süreçlerini dijital olarak takip etmeniz için tasarlanmış, tamamen çevrimdışı ve güvenli bir ERP çözümüdür.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[700])),
+                Icon(Icons.info_outline, size: 40, color: kKolarcBlue),
+                SizedBox(height: 10),
+                Text('Makina Takip Sistemine Hoş Geldiniz!', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                SizedBox(height: 5),
+                Text('Bu yazılım, fabrikanızdaki makinaları, kartları, malzemeleri ve bakım süreçlerini dijital olarak takip etmeniz için tasarlanmış, tamamen çevrimdışı ve güvenli bir ERP çözümüdür.', textAlign: TextAlign.center),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          _kilavuzKarti(context, '1. Yönetici (Admin) Girişi', 'Sistem varsayılan olarak "İzleme Modunda" başlar. Yeni bir makina eklemek, kart bağlamak veya veri silmek için üst sağdaki "Giriş" ikonuna tıklayıp şifreyi (1234) girmelisiniz. Admin olduğunuzda ekranın sağ alt köşesinde ekleme (+) butonları belirecektir.', Icons.admin_panel_settings, Colors.redAccent),
-          _kilavuzKarti(context, '2. Süper Arama Motoru', 'Ekranın üstündeki Büyüteç ikonuna basarak sistemdeki HER ŞEYİ tek bir yerden arayabilirsiniz. Bir kod veya isim yazdığınızda sistem; depodaki kartları, makinaları, makinalara takılı kartları ve SMD/Bacaklı malzemeleri saniyeler içinde tarayıp karşınıza getirir.', Icons.search, kKolarcBlue),
-          _kilavuzKarti(context, '3. Ana Ekran Paneli', 'Ortadaki 6 büyük renkli kutu deponuzun anlık özetidir. Herhangi bir kutuya tıkladığınızda o bölümün detaylı listesine ulaşırsınız. (Örneğin "Toplam Makina" kutusuna tıklayarak makinaların listesine gidebilirsiniz).', Icons.dashboard, kKolarcOrange),
+          // ✅ ŞİFRE GİZLENDİ VE METİN GÜNCELLENDİ
+          _kilavuzKarti(context, '1. Yönetici (Admin) Girişi', 'Sistem varsayılan olarak "İzleme Modunda" başlar. Yeni bir makina eklemek, kart bağlamak veya veri silmek için üst sağdaki "Giriş" ikonuna tıklayıp şifreyi girmelisiniz. Admin olduğunuzda ekranın sağ alt köşesinde ekleme (+) butonları belirecektir.', Icons.admin_panel_settings, Colors.redAccent),
+          _kilavuzKarti(context, '2. Süper Arama Motoru', 'Ekranın üstündeki Büyüteç ikonuna basarak sistemdeki HER ŞEYİ tek bir yerden arayabilirsiniz. Bir kod veya isim yazdığınızda sistem; depodaki kartları, makinaları, makinalara takılı kartları ve malzemeleri saniyeler içinde tarayıp karşınıza getirir.', Icons.search, kKolarcBlue),
+          _kilavuzKarti(context, '3. Ana Ekran Paneli', 'Ortadaki renkli kutular deponuzun anlık özetidir. Herhangi bir kutuya tıkladığınızda o bölümün detaylı listesine ulaşırsınız. (Örneğin "Toplam Makina" kutusuna tıklayarak makinaların listesine gidebilirsiniz).', Icons.dashboard, kKolarcOrange),
           _kilavuzKarti(context, '4. Raporlama (Excel & PDF)', 'Ana sayfadaki Excel veya PDF butonlarına basarak sistemin o anki tam özetini (Tüm makinalar, işlem gören kartlar ve revizyon geçmişi) tek tıkla resmi bir rapor halinde indirebilirsiniz.', Icons.picture_as_pdf, Colors.red),
           _kilavuzKarti(context, '5. Makina ve Kart Yönetimi', 'Makinalar listesinden bir makinaya tıkladığınızda içine girebilir ve "Depodan Kart Ekle" diyerek sistemdeki boş bir kartı o makinaya bağlayabilirsiniz. Bir kart makinaya bağlandığında, ana ekranda "Takılı Kartlar" bölümüne geçer.', Icons.precision_manufacturing, Colors.indigo),
           _kilavuzKarti(context, '6. Revizyon (İşlem) Kaydetme', 'Bir karta müdahale ettiğinizde (lehim, parça değişimi vs.), o kartın detayına girip "Revizyon Ekle" diyebilirsiniz. Hangi makinada ne işlem yaptığınızı yazdığınızda, sistem bunu tarih/saat ile birlikte sonsuza dek kayıt altına alır.', Icons.history_edu, Colors.purple),
@@ -308,6 +329,47 @@ class AnaGezinmeSayfasi extends StatefulWidget {
 
 class _AnaGezinmeSayfasiState extends State<AnaGezinmeSayfasi> {
   bool isAdmin = false; 
+
+  // ✅ ŞİFRE DEĞİŞTİRME MENÜSÜ FONKSİYONU
+  void sifreDegistirmePenceresi() {
+    TextEditingController eskiSifreKontrolcusu = TextEditingController();
+    TextEditingController yeniSifreKontrolcusu = TextEditingController();
+
+    void degistir() async {
+      if (eskiSifreKontrolcusu.text == gecerliAdminSifresi) {
+        if (yeniSifreKontrolcusu.text.isNotEmpty) {
+          setState(() { gecerliAdminSifresi = yeniSifreKontrolcusu.text; });
+          await verileriKaydet(); // Şifreyi hafızaya kazı
+          if (mounted) Navigator.pop(context);
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Şifre başarıyla değiştirildi!'), backgroundColor: Colors.green));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Yeni şifre boş olamaz!'), backgroundColor: Colors.orange));
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Eski şifre hatalı!'), backgroundColor: Colors.red));
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [Icon(Icons.password, color: kKolarcBlue), SizedBox(width: 10), Text('Admin Şifresini Değiştir')]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: eskiSifreKontrolcusu, obscureText: true, decoration: const InputDecoration(labelText: 'Mevcut Şifre', prefixIcon: Icon(Icons.lock_outline))),
+            const SizedBox(height: 10),
+            TextField(controller: yeniSifreKontrolcusu, obscureText: true, decoration: const InputDecoration(labelText: 'Yeni Şifre', prefixIcon: Icon(Icons.lock)), onSubmitted: (_) => degistir()),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal', style: TextStyle(color: Colors.red))),
+          ElevatedButton(onPressed: degistir, child: const Text('Değiştir'))
+        ],
+      )
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -334,6 +396,11 @@ class _AnaGezinmeSayfasiState extends State<AnaGezinmeSayfasi> {
                     const SizedBox(width: 5),
                     IconButton(icon: const Icon(Icons.search, color: Colors.white), tooltip: 'Sistemde Ara', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SuperAramaSayfasi(isAdmin: isAdmin))).then((_) => setState((){}))),
                     IconButton(icon: const Icon(Icons.delete_sweep, color: Colors.white70), tooltip: 'Sistem Arşivi', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ArsivSayfasi(isAdmin: isAdmin))).then((_) => setState((){}))),
+                    
+                    // ✅ EĞER ADMİNSE ŞİFRE DEĞİŞTİRME BUTONU GÖSTERİLİR
+                    if (isAdmin)
+                      IconButton(icon: const Icon(Icons.vpn_key, color: Colors.greenAccent), tooltip: 'Şifreyi Değiştir', onPressed: sifreDegistirmePenceresi),
+
                     IconButton(
                       icon: Icon(temaYoneticisi.value == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode, color: Colors.yellowAccent), 
                       onPressed: () async { 
@@ -358,7 +425,8 @@ class _AnaGezinmeSayfasiState extends State<AnaGezinmeSayfasi> {
   void adminGirisiYap() {
     TextEditingController sifreKontrolcusu = TextEditingController();
     void girisTetikle() {
-      if (sifreKontrolcusu.text == '1234') { 
+      // ✅ SADECE 1234 DEĞİL, GEÇERLİ ŞİFREYİ KONTROL EDİYORUZ
+      if (sifreKontrolcusu.text == gecerliAdminSifresi) { 
         setState(() => isAdmin = true); Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Admin yetkileri aktif!'), backgroundColor: Colors.green));
       } else { 
         Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hatalı şifre!'), backgroundColor: Colors.red)); 
@@ -410,13 +478,23 @@ class _SuperAramaSayfasiState extends State<SuperAramaSayfasi> {
       }
     }
     for (var mal in smdMalzemeler) {
-      if (mal.kod.toLowerCase().contains(s) || mal.raf.toLowerCase().contains(s)) {
-        sonuclar.add({'tip': 'SMD Malzeme', 'ikon': Icons.developer_board, 'renk': kKolarcBlue, 'baslik': mal.kod, 'altbaslik': 'Raf: ${mal.raf} | Sıra: ${mal.sira}', 'nesne': mal});
+      if (mal.kod.toLowerCase().contains(s) || mal.ad.toLowerCase().contains(s)) {
+        sonuclar.add({'tip': 'SMD Raf', 'ikon': Icons.developer_board, 'renk': kKolarcBlue, 'baslik': mal.ad, 'altbaslik': 'Kod: ${mal.kod}', 'nesne': mal});
       }
     }
     for (var mal in bacakliMalzemeler) {
-      if (mal.kod.toLowerCase().contains(s) || mal.raf.toLowerCase().contains(s)) {
-        sonuclar.add({'tip': 'Bacaklı Malzeme', 'ikon': Icons.hub, 'renk': Colors.cyan, 'baslik': mal.kod, 'altbaslik': 'Raf: ${mal.raf} | Sıra: ${mal.sira}', 'nesne': mal});
+      if (mal.kod.toLowerCase().contains(s) || mal.ad.toLowerCase().contains(s)) {
+        sonuclar.add({'tip': 'Bacaklı Raf', 'ikon': Icons.hub, 'renk': Colors.cyan, 'baslik': mal.ad, 'altbaslik': 'Kod: ${mal.kod}', 'nesne': mal});
+      }
+    }
+    for (var mal in smdDepoMalzemeler) {
+      if (mal.kod.toLowerCase().contains(s) || mal.ad.toLowerCase().contains(s)) {
+        sonuclar.add({'tip': 'SMD Depo', 'ikon': Icons.inventory, 'renk': Colors.orangeAccent, 'baslik': mal.ad, 'altbaslik': 'Kod: ${mal.kod}', 'nesne': mal});
+      }
+    }
+    for (var mal in bacakliDepoMalzemeler) {
+      if (mal.kod.toLowerCase().contains(s) || mal.ad.toLowerCase().contains(s)) {
+        sonuclar.add({'tip': 'Bacaklı Depo', 'ikon': Icons.dns, 'renk': Colors.purpleAccent, 'baslik': mal.ad, 'altbaslik': 'Kod: ${mal.kod}', 'nesne': mal});
       }
     }
     for (var k in arsivlenmisKartlar) {
@@ -525,7 +603,13 @@ class _ArsivSayfasiState extends State<ArsivSayfasi> with SingleTickerProviderSt
     setState(() { 
       for(var k in seciliKartlar) { arsivlenmisKartlar.remove(k); tumKartlarDeposu.add(k); } 
       for(var m in seciliMakinalar) { arsivlenmisMakinalar.remove(m); tumMakinalar.add(m); } 
-      for(var mal in seciliMalzemeler) { arsivlenmisMalzemeler.remove(mal); if(mal.depoTipi == 'SMD') { smdMalzemeler.add(mal); } else { bacakliMalzemeler.add(mal); } } 
+      for(var mal in seciliMalzemeler) { 
+        arsivlenmisMalzemeler.remove(mal); 
+        if(mal.depoTipi == 'SMD Raf' || mal.depoTipi == 'SMD') { smdMalzemeler.add(mal); } 
+        else if(mal.depoTipi == 'Bacaklı Raf' || mal.depoTipi == 'Bacaklı') { bacakliMalzemeler.add(mal); } 
+        else if(mal.depoTipi == 'SMD Depo') { smdDepoMalzemeler.add(mal); }
+        else if(mal.depoTipi == 'Bacaklı Depo') { bacakliDepoMalzemeler.add(mal); }
+      } 
     }); 
     verileriKaydet(); secimiKapat(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seçilenler başarıyla geri yüklendi!'), backgroundColor: Colors.green)); 
   }
@@ -582,7 +666,7 @@ class _ArsivSayfasiState extends State<ArsivSayfasi> with SingleTickerProviderSt
           }),
           arsivlenmisMalzemeler.isEmpty ? const Center(child: Text('Arşiv boş.')) : ListView.builder(padding: const EdgeInsets.all(8), itemCount: arsivlenmisMalzemeler.length, itemBuilder: (context, index) { 
             final malz = arsivlenmisMalzemeler[index]; bool seciliMi = seciliMalzemeler.contains(malz); 
-            return Card(color: seciliMi ? kKolarcBlue.withValues(alpha: 0.2) : null, child: ListTile(onLongPress: widget.isAdmin ? () { setState((){ secimModu = true; seciliMalzemeler.add(malz); }); } : null, onTap: secimModu ? () { setState((){ if (seciliMi) { seciliMalzemeler.remove(malz); if(toplamSecili==0) { secimModu=false; } } else { seciliMalzemeler.add(malz); } }); } : null, title: Text('${malz.kod} (${malz.depoTipi})', style: const TextStyle(decoration: TextDecoration.lineThrough)), subtitle: Text('Raf: ${malz.raf} | Sıra: ${malz.sira}\nSilinme Öncesi: ${malz.eklenmeTarihi}'), trailing: secimModu ? Checkbox(activeColor: kKolarcBlue, value: seciliMi, onChanged: (v){ setState((){ if (v!) { seciliMalzemeler.add(malz); } else { seciliMalzemeler.remove(malz); if(toplamSecili==0) { secimModu=false; } } }); }) : null, )); 
+            return Card(color: seciliMi ? kKolarcBlue.withValues(alpha: 0.2) : null, child: ListTile(onLongPress: widget.isAdmin ? () { setState((){ secimModu = true; seciliMalzemeler.add(malz); }); } : null, onTap: secimModu ? () { setState((){ if (seciliMi) { seciliMalzemeler.remove(malz); if(toplamSecili==0) { secimModu=false; } } else { seciliMalzemeler.add(malz); } }); } : null, title: Text('${malz.kod} (${malz.depoTipi})', style: const TextStyle(decoration: TextDecoration.lineThrough)), subtitle: Text('İsim: ${malz.ad}\nSilinme Öncesi: ${malz.eklenmeTarihi}'), trailing: secimModu ? Checkbox(activeColor: kKolarcBlue, value: seciliMi, onChanged: (v){ setState((){ if (v!) { seciliMalzemeler.add(malz); } else { seciliMalzemeler.remove(malz); if(toplamSecili==0) { secimModu=false; } } }); }) : null, )); 
           }),
         ],
       )
@@ -590,7 +674,7 @@ class _ArsivSayfasiState extends State<ArsivSayfasi> with SingleTickerProviderSt
   }
 }
 
-// --- DÜZELTİLMİŞ ÖZET PANELİ (WINDOWS & iOS UYUMLU) ---
+// --- ÖZET PANELİ ---
 class OzetPaneliSayfasi extends StatefulWidget {
   final bool isAdmin;
   const OzetPaneliSayfasi({super.key, required this.isAdmin});
@@ -601,7 +685,52 @@ class OzetPaneliSayfasi extends StatefulWidget {
 class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
 
   Future<void> _genelCsvYukle({required String baslik, required String bilgi, required Function(List<String>) satirIsleyici}) async {
-    showDialog(context: context, builder: (context) => AlertDialog(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), title: Text(baslik), content: Text(bilgi), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')), ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: kKolarcBlue), onPressed: () async { Navigator.pop(context); FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['csv', 'txt']); if (result != null) { try { File file = File(result.files.single.path!); String contents = await file.readAsString(); List<String> lines = contents.split('\n'); for (String line in lines) { if (line.trim().isEmpty) { continue; } List<String> cols = line.split(RegExp(r'[;,]')); satirIsleyici(cols); } setState(() {}); verileriKaydet(); if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Toplu yükleme başarıyla tamamlandı!'), backgroundColor: Colors.green)); } } catch (e) { if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dosya okunurken hata oluştu.'), backgroundColor: Colors.red)); } } } }, child: const Text('Dosya Seç', style: TextStyle(color: Colors.white))) ]));
+    showDialog(
+      context: context, 
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), 
+        title: Text(baslik), 
+        content: Text(bilgi), 
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')), 
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: kKolarcBlue), 
+            onPressed: () async { 
+              Navigator.pop(context); 
+              FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['csv', 'txt']); 
+              if (result != null) { 
+                try { 
+                  File file = File(result.files.single.path!); 
+                  List<int> bytes = await file.readAsBytes();
+                  String contents = utf8.decode(bytes, allowMalformed: true);
+                  
+                  if (contents.startsWith('\uFEFF')) { contents = contents.substring(1); }
+                  List<String> lines = contents.split(RegExp(r'\r\n|\n|\r')); 
+                  
+                  int islenenSatir = 0;
+                  for (String line in lines) { 
+                    if (line.trim().isEmpty) continue; 
+                    if (line.toLowerCase().startsWith('makina') || line.toLowerCase().startsWith('kart') || line.toLowerCase().startsWith('kod') || line.toLowerCase().startsWith('ürün')) { continue; }
+                    List<String> cols = line.split(RegExp(r'[;,]')); 
+                    satirIsleyici(cols); 
+                    islenenSatir++;
+                  } 
+                  
+                  setState(() {}); verileriKaydet(); 
+                  if (context.mounted) { 
+                    if (islenenSatir > 0) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$islenenSatir kayıt başarıyla yüklendi!'), backgroundColor: Colors.green)); } 
+                    else { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dosyada uygun kayıt bulunamadı.'), backgroundColor: Colors.orange)); }
+                  } 
+                } catch (e) { 
+                  if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red)); } 
+                } 
+              } 
+            }, 
+            child: const Text('Dosya Seç', style: TextStyle(color: Colors.white))
+          ) 
+        ]
+      )
+    );
   }
 
   void _bakimCsvYukle() {
@@ -642,10 +771,13 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
   }
   
   void _malzemeYukle(String tip) { 
-    _genelCsvYukle(baslik: '$tip Malzeme Listesi Yükle', bilgi: "Sütunlar: Kod, Raf, Sıra", satirIsleyici: (cols) { 
-      if (cols.length >= 3 && cols[0].trim().isNotEmpty) { 
-        Malzeme m = Malzeme(kod: cols[0].trim().toUpperCase(), raf: kelimeIlkHarfleriBuyut(cols[1]), sira: kelimeIlkHarfleriBuyut(cols[2]), depoTipi: tip, eklenmeTarihi: anlikTarihSaatGetir()); 
-        if (tip == 'SMD') { smdMalzemeler.add(m); } else { bacakliMalzemeler.add(m); } 
+    _genelCsvYukle(baslik: '$tip Listesi Yükle', bilgi: "Sütunlar: Ürün İsmi, Ürün Kodu", satirIsleyici: (cols) { 
+      if (cols.length >= 2 && cols[0].trim().isNotEmpty) { 
+        Malzeme m = Malzeme(ad: kelimeIlkHarfleriBuyut(cols[0]), kod: cols[1].trim().toUpperCase(), depoTipi: tip, eklenmeTarihi: anlikTarihSaatGetir()); 
+        if (tip == 'SMD Raf' || tip == 'SMD') { smdMalzemeler.add(m); } 
+        else if (tip == 'Bacaklı Raf' || tip == 'Bacaklı') { bacakliMalzemeler.add(m); } 
+        else if (tip == 'SMD Depo') { smdDepoMalzemeler.add(m); }
+        else if (tip == 'Bacaklı Depo') { bacakliDepoMalzemeler.add(m); }
       } 
     }); 
   }
@@ -671,7 +803,6 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
     }); 
   }
 
-  // ✅ DÜZELTİLDİ: Windows (Farklı Kaydet) & iOS (Paylaş) Excel
   Future<void> excelRaporuIndir(BuildContext context) async {
     String csvVerisi = "Makina Adi;Makina Kodu;Bagli Kart Sayisi;Kart Ismi;Kart Kodu;Revizyon Sayisi;Eklenme Tarihi\n";
     for (var makina in tumMakinalar) { 
@@ -710,7 +841,6 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
     }
   }
 
-  // ✅ DÜZELTİLDİ: Windows (Farklı Kaydet) & iOS (Paylaş) PDF
   Future<void> _pdfRaporuOlustur(BuildContext context) async {
     showDialog(context: context, barrierDismissible: false, builder: (c) => const Center(child: CircularProgressIndicator(color: kKolarcBlue)));
 
@@ -782,17 +912,19 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
               
               pw.Row(
                 children: [
-                  _pdfOzetKutusu('Kayıtlı Makina', tumMakinalar.length.toString()),
-                  _pdfOzetKutusu('Depo Kartları', tumKartlarDeposu.length.toString()),
-                  _pdfOzetKutusu('Takılı Kartlar', takiliKartSayisi.toString()),
+                  _pdfOzetKutusu('Makina', tumMakinalar.length.toString()),
+                  _pdfOzetKutusu('Depo Kart', tumKartlarDeposu.length.toString()),
+                  _pdfOzetKutusu('Takılı Kart', takiliKartSayisi.toString()),
+                  _pdfOzetKutusu('Revizyon', butunRevizyonlar.length.toString()),
                 ]
               ),
               pw.SizedBox(height: 10),
               pw.Row(
                 children: [
-                  _pdfOzetKutusu('Toplam Revizyon', butunRevizyonlar.length.toString()),
-                  _pdfOzetKutusu('SMD Malzeme', smdMalzemeler.length.toString()),
-                  _pdfOzetKutusu('Bacaklı Malzeme', bacakliMalzemeler.length.toString()),
+                  _pdfOzetKutusu('SMD Raf', smdMalzemeler.length.toString()),
+                  _pdfOzetKutusu('Bacaklı Raf', bacakliMalzemeler.length.toString()),
+                  _pdfOzetKutusu('SMD Depo', smdDepoMalzemeler.length.toString()),
+                  _pdfOzetKutusu('Bacaklı Depo', bacakliDepoMalzemeler.length.toString()),
                 ]
               ),
 
@@ -871,8 +1003,8 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
   pw.Widget _pdfOzetKutusu(String baslik, String deger) {
     return pw.Expanded(
       child: pw.Container(
-        margin: const pw.EdgeInsets.symmetric(horizontal: 5),
-        padding: const pw.EdgeInsets.all(10),
+        margin: const pw.EdgeInsets.symmetric(horizontal: 3),
+        padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 5),
         decoration: pw.BoxDecoration(
           color: PdfColors.grey100,
           border: pw.Border.all(color: PdfColors.grey400),
@@ -880,16 +1012,15 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
         ),
         child: pw.Column(
           children: [
-            pw.Text(deger, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.teal900)),
+            pw.Text(deger, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.teal900)),
             pw.SizedBox(height: 4),
-            pw.Text(baslik, textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 9)),
+            pw.Text(baslik, textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 8)),
           ]
         )
       )
     );
   }
 
-  // ✅ DÜZELTİLDİ: Windows (Farklı Kaydet) & iOS (Paylaş) Yedekleme
   Future<void> _sistemiYedekle(BuildContext context) async {
     try {
       Map<String, dynamic> tamYedek = {
@@ -899,6 +1030,8 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
         'makinalar': tumMakinalar.map((e) => e.toJson()).toList(),
         'smdMalzemeler': smdMalzemeler.map((e) => e.toJson()).toList(),
         'bacakliMalzemeler': bacakliMalzemeler.map((e) => e.toJson()).toList(),
+        'smdDepoMalzemeler': smdDepoMalzemeler.map((e) => e.toJson()).toList(),
+        'bacakliDepoMalzemeler': bacakliDepoMalzemeler.map((e) => e.toJson()).toList(),
         'arsivKartlar': arsivlenmisKartlar.map((e) => e.toJson()).toList(),
         'arsivMakinalar': arsivlenmisMakinalar.map((e) => e.toJson()).toList(),
         'arsivMalzemeler': arsivlenmisMalzemeler.map((e) => e.toJson()).toList(),
@@ -947,7 +1080,10 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
             if (result != null) { 
               try { 
                 File file = File(result.files.single.path!); 
-                String contents = await file.readAsString(); 
+                List<int> bytes = await file.readAsBytes();
+                String contents = utf8.decode(bytes, allowMalformed: true);
+                if (contents.startsWith('\uFEFF')) { contents = contents.substring(1); }
+                
                 Map<String, dynamic> gelenVeri = jsonDecode(contents);
                 
                 setState(() {
@@ -955,6 +1091,8 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
                   if (gelenVeri.containsKey('makinalar')) { tumMakinalar = List<Makina>.from((gelenVeri['makinalar'] as List).map((x) => Makina.fromJson(x))); }
                   if (gelenVeri.containsKey('smdMalzemeler')) { smdMalzemeler = List<Malzeme>.from((gelenVeri['smdMalzemeler'] as List).map((x) => Malzeme.fromJson(x))); }
                   if (gelenVeri.containsKey('bacakliMalzemeler')) { bacakliMalzemeler = List<Malzeme>.from((gelenVeri['bacakliMalzemeler'] as List).map((x) => Malzeme.fromJson(x))); }
+                  if (gelenVeri.containsKey('smdDepoMalzemeler')) { smdDepoMalzemeler = List<Malzeme>.from((gelenVeri['smdDepoMalzemeler'] as List).map((x) => Malzeme.fromJson(x))); }
+                  if (gelenVeri.containsKey('bacakliDepoMalzemeler')) { bacakliDepoMalzemeler = List<Malzeme>.from((gelenVeri['bacakliDepoMalzemeler'] as List).map((x) => Malzeme.fromJson(x))); }
                   if (gelenVeri.containsKey('arsivKartlar')) { arsivlenmisKartlar = List<Kart>.from((gelenVeri['arsivKartlar'] as List).map((x) => Kart.fromJson(x))); }
                   if (gelenVeri.containsKey('arsivMakinalar')) { arsivlenmisMakinalar = List<Makina>.from((gelenVeri['arsivMakinalar'] as List).map((x) => Makina.fromJson(x))); }
                   if (gelenVeri.containsKey('arsivMalzemeler')) { arsivlenmisMalzemeler = List<Malzeme>.from((gelenVeri['arsivMalzemeler'] as List).map((x) => Malzeme.fromJson(x))); }
@@ -981,7 +1119,8 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
   @override
   Widget build(BuildContext context) {
     int toplamMakina = tumMakinalar.length; int depodakiKart = tumKartlarDeposu.length; int makinalardakiToplamKart = tumMakinalar.fold(0, (sum, m) => sum + m.bagliKartlar.length);
-    int smdSayisi = smdMalzemeler.length; int bacakliSayisi = bacakliMalzemeler.length;
+    int smdRafSayisi = smdMalzemeler.length; int bacakliRafSayisi = bacakliMalzemeler.length;
+    int smdDepoSayisi = smdDepoMalzemeler.length; int bacakliDepoSayisi = bacakliDepoMalzemeler.length;
     int toplamRevizyonSayisi = 0; List<Kart> tumSistemdekiKartlar = [...tumKartlarDeposu]; for(var m in tumMakinalar) { tumSistemdekiKartlar.addAll(m.bagliKartlar); } for(var k in tumSistemdekiKartlar) { toplamRevizyonSayisi += k.revizyonlar.length; }
 
     double ekranGenisligi = MediaQuery.of(context).size.width; 
@@ -1027,8 +1166,12 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
               _buildResponsiveKutu('Depo Kartları', depodakiKart.toString(), Icons.inventory_2, const Color(0xFF5C6BC0), const Color(0xFF283593), kutuGenisligi, () { Navigator.push(context, MaterialPageRoute(builder: (context) => KartlarSayfasi(isAdmin: widget.isAdmin))).then((_) => setState((){})); }, yuklemeGorevi: _kartYukle),
               _buildResponsiveKutu('Takılı Kartlar', makinalardakiToplamKart.toString(), Icons.memory, const Color(0xFF66BB6A), const Color(0xFF2E7D32), kutuGenisligi, () { Navigator.push(context, MaterialPageRoute(builder: (context) => AktifKartlarSayfasi(isAdmin: widget.isAdmin))).then((_) => setState((){})); }), 
               _buildResponsiveKutu('Revizyonlar', toplamRevizyonSayisi.toString(), Icons.history_edu, const Color(0xFFAB47BC), const Color(0xFF6A1B9A), kutuGenisligi, () { Navigator.push(context, MaterialPageRoute(builder: (context) => TumRevizyonlarSayfasi(isAdmin: widget.isAdmin))).then((_) => setState((){})); }, yuklemeGorevi: _revizyonYukle),
-              _buildResponsiveKutu('SMD Depo', smdSayisi.toString(), Icons.developer_board, const Color(0xFF8D6E63), const Color(0xFF4E342E), kutuGenisligi, () { Navigator.push(context, MaterialPageRoute(builder: (context) => MalzemeDepoSayfasi(isAdmin: widget.isAdmin, depoTipi: 'SMD'))).then((_) => setState((){})); }, yuklemeGorevi: () => _malzemeYukle('SMD')),
-              _buildResponsiveKutu('Bacaklı Dizgi', bacakliSayisi.toString(), Icons.hub, const Color(0xFF78909C), const Color(0xFF37474F), kutuGenisligi, () { Navigator.push(context, MaterialPageRoute(builder: (context) => MalzemeDepoSayfasi(isAdmin: widget.isAdmin, depoTipi: 'Bacaklı'))).then((_) => setState((){})); }, yuklemeGorevi: () => _malzemeYukle('Bacaklı')),
+              
+              _buildResponsiveKutu('SMD Raf', smdRafSayisi.toString(), Icons.developer_board, const Color(0xFF8D6E63), const Color(0xFF4E342E), kutuGenisligi, () { Navigator.push(context, MaterialPageRoute(builder: (context) => MalzemeDepoSayfasi(isAdmin: widget.isAdmin, depoTipi: 'SMD Raf'))).then((_) => setState((){})); }, yuklemeGorevi: () => _malzemeYukle('SMD Raf')),
+              _buildResponsiveKutu('Bacaklı Raf', bacakliRafSayisi.toString(), Icons.hub, const Color(0xFF78909C), const Color(0xFF37474F), kutuGenisligi, () { Navigator.push(context, MaterialPageRoute(builder: (context) => MalzemeDepoSayfasi(isAdmin: widget.isAdmin, depoTipi: 'Bacaklı Raf'))).then((_) => setState((){})); }, yuklemeGorevi: () => _malzemeYukle('Bacaklı Raf')),
+              
+              _buildResponsiveKutu('SMD Depo', smdDepoSayisi.toString(), Icons.inventory, const Color(0xFFFFA726), const Color(0xFFE65100), kutuGenisligi, () { Navigator.push(context, MaterialPageRoute(builder: (context) => MalzemeDepoSayfasi(isAdmin: widget.isAdmin, depoTipi: 'SMD Depo'))).then((_) => setState((){})); }, yuklemeGorevi: () => _malzemeYukle('SMD Depo')),
+              _buildResponsiveKutu('Bacaklı Depo', bacakliDepoSayisi.toString(), Icons.dns, const Color(0xFF26C6DA), const Color(0xFF006064), kutuGenisligi, () { Navigator.push(context, MaterialPageRoute(builder: (context) => MalzemeDepoSayfasi(isAdmin: widget.isAdmin, depoTipi: 'Bacaklı Depo'))).then((_) => setState((){})); }, yuklemeGorevi: () => _malzemeYukle('Bacaklı Depo')),
             ],
           ),
 
@@ -1263,26 +1406,35 @@ class MalzemeDepoSayfasi extends StatefulWidget {
 }
 
 class _MalzemeDepoSayfasiState extends State<MalzemeDepoSayfasi> {
-  TextEditingController aramaKontrolcusu = TextEditingController(); List<Malzeme> ekrandakiMalzemeler = []; List<Malzeme> get hedefDepo => widget.depoTipi == 'SMD' ? smdMalzemeler : bacakliMalzemeler;
+  TextEditingController aramaKontrolcusu = TextEditingController(); List<Malzeme> ekrandakiMalzemeler = []; 
+  
+  List<Malzeme> get hedefDepo {
+    if (widget.depoTipi == 'SMD Raf' || widget.depoTipi == 'SMD') return smdMalzemeler;
+    if (widget.depoTipi == 'Bacaklı Raf' || widget.depoTipi == 'Bacaklı') return bacakliMalzemeler;
+    if (widget.depoTipi == 'SMD Depo') return smdDepoMalzemeler;
+    if (widget.depoTipi == 'Bacaklı Depo') return bacakliDepoMalzemeler;
+    return smdMalzemeler;
+  }
+
   bool secimModu = false; Set<Malzeme> secilenler = {};
   @override
   void initState() { super.initState(); _aramaYap(""); }
-  void _aramaYap(String aranan) { setState(() { ekrandakiMalzemeler = hedefDepo.where((m) => m.kod.toLowerCase().contains(aranan.toLowerCase()) || m.raf.toLowerCase().contains(aranan.toLowerCase())).toList(); }); }
+  void _aramaYap(String aranan) { setState(() { ekrandakiMalzemeler = hedefDepo.where((m) => m.kod.toLowerCase().contains(aranan.toLowerCase()) || m.ad.toLowerCase().contains(aranan.toLowerCase())).toList(); }); }
   void tumunuSec() { setState(() { if (secilenler.length == ekrandakiMalzemeler.length) { secilenler.clear(); secimModu = false; } else { secilenler.addAll(ekrandakiMalzemeler); secimModu = true; } }); }
   
   void manuelEkle({Malzeme? varOlanMalzeme}) { 
-    TextEditingController kodKontrolcusu = TextEditingController(text: varOlanMalzeme?.kod ?? ''); TextEditingController rafKontrolcusu = TextEditingController(text: varOlanMalzeme?.raf ?? ''); TextEditingController siraKontrolcusu = TextEditingController(text: varOlanMalzeme?.sira ?? ''); 
+    TextEditingController adKontrolcusu = TextEditingController(text: varOlanMalzeme?.ad ?? ''); 
+    TextEditingController kodKontrolcusu = TextEditingController(text: varOlanMalzeme?.kod ?? ''); 
     void kaydetTetikle() {
-      if (kodKontrolcusu.text.isNotEmpty) { 
+      if (adKontrolcusu.text.isNotEmpty && kodKontrolcusu.text.isNotEmpty) { 
         setState(() { 
           String formatliKod = kodKontrolcusu.text.trim().toUpperCase();
-          String formatliRaf = kelimeIlkHarfleriBuyut(rafKontrolcusu.text);
-          String formatliSira = kelimeIlkHarfleriBuyut(siraKontrolcusu.text);
+          String formatliAd = kelimeIlkHarfleriBuyut(adKontrolcusu.text);
           
           if (varOlanMalzeme == null) { 
-            hedefDepo.add(Malzeme(kod: formatliKod, raf: formatliRaf, sira: formatliSira, depoTipi: widget.depoTipi, eklenmeTarihi: anlikTarihSaatGetir())); 
+            hedefDepo.add(Malzeme(kod: formatliKod, ad: formatliAd, depoTipi: widget.depoTipi, eklenmeTarihi: anlikTarihSaatGetir())); 
           } else { 
-            varOlanMalzeme.kod = formatliKod; varOlanMalzeme.raf = formatliRaf; varOlanMalzeme.sira = formatliSira; 
+            varOlanMalzeme.kod = formatliKod; varOlanMalzeme.ad = formatliAd; 
           } 
           _aramaYap(aramaKontrolcusu.text); 
         }); verileriKaydet(); Navigator.pop(context); 
@@ -1290,11 +1442,10 @@ class _MalzemeDepoSayfasiState extends State<MalzemeDepoSayfasi> {
     }
     showDialog(context: context, builder: (context) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(varOlanMalzeme == null ? 'Yeni Malzeme Ekle' : 'Malzemeyi Düzenle', style: const TextStyle(fontWeight: FontWeight.bold)), 
+      title: Text(varOlanMalzeme == null ? 'Yeni Ürün Ekle' : 'Ürünü Düzenle', style: const TextStyle(fontWeight: FontWeight.bold)), 
       content: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: kodKontrolcusu, textCapitalization: TextCapitalization.characters, textInputAction: TextInputAction.next, decoration: const InputDecoration(labelText: 'Malzeme Kodu')), const SizedBox(height: 10),
-        TextField(controller: rafKontrolcusu, textCapitalization: TextCapitalization.words, textInputAction: TextInputAction.next, decoration: const InputDecoration(labelText: 'Raf')), const SizedBox(height: 10),
-        TextField(controller: siraKontrolcusu, textCapitalization: TextCapitalization.words, textInputAction: TextInputAction.done, onSubmitted: (_) => kaydetTetikle(), decoration: const InputDecoration(labelText: 'Sıra')), 
+        TextField(controller: adKontrolcusu, textCapitalization: TextCapitalization.words, textInputAction: TextInputAction.next, decoration: const InputDecoration(labelText: 'Ürün İsmi')), const SizedBox(height: 10),
+        TextField(controller: kodKontrolcusu, textCapitalization: TextCapitalization.characters, textInputAction: TextInputAction.done, onSubmitted: (_) => kaydetTetikle(), decoration: const InputDecoration(labelText: 'Ürün Kodu')), 
       ]), 
       actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal', style: TextStyle(color: Colors.red))), ElevatedButton(onPressed: kaydetTetikle, child: const Text('Kaydet') ) ]
     )); 
@@ -1304,7 +1455,7 @@ class _MalzemeDepoSayfasiState extends State<MalzemeDepoSayfasi> {
 
   @override
   Widget build(BuildContext context) {
-    IconData depoIkon = widget.depoTipi == 'SMD' ? Icons.developer_board : Icons.hub;
+    IconData depoIkon = widget.depoTipi.contains('SMD') ? Icons.developer_board : Icons.hub;
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: secimModu ? null : kolarcAppBarBackground(),
@@ -1313,7 +1464,7 @@ class _MalzemeDepoSayfasiState extends State<MalzemeDepoSayfasi> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Flexible(child: Text(secimModu ? '${secilenler.length} Seçildi' : '${widget.depoTipi} Deposu', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+            Flexible(child: Text(secimModu ? '${secilenler.length} Seçildi' : widget.depoTipi, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
             if (secimModu)
               Expanded(
                 child: SingleChildScrollView(
@@ -1336,8 +1487,8 @@ class _MalzemeDepoSayfasiState extends State<MalzemeDepoSayfasi> {
       floatingActionButton: (!secimModu && widget.isAdmin) ? FloatingActionButton.extended(onPressed: manuelEkle, backgroundColor: kKolarcBlue, icon: const Icon(Icons.add, color: Colors.white), label: const Text('Yeni Ekle', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))) : null,
       body: Column(
         children: [
-          Padding(padding: const EdgeInsets.all(12.0), child: TextField(controller: aramaKontrolcusu, onChanged: _aramaYap, decoration: const InputDecoration(labelText: 'Malzeme Kodu veya Raf Ara...', prefixIcon: Icon(Icons.search, color: kKolarcBlue)))),
-          Expanded(child: ekrandakiMalzemeler.isEmpty ? const Center(child: Text('Malzeme bulunamadı.')) : ListView.builder(padding: const EdgeInsets.symmetric(horizontal: 8), itemCount: ekrandakiMalzemeler.length, itemBuilder: (context, index) { final malz = ekrandakiMalzemeler[index]; bool seciliMi = secilenler.contains(malz); return Card(color: seciliMi ? kKolarcBlue.withValues(alpha: 0.1) : null, margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), child: ListTile(onLongPress: widget.isAdmin ? () { setState((){ secimModu = true; secilenler.add(malz); }); } : null, onTap: secimModu ? () { setState((){ if (seciliMi) { secilenler.remove(malz); if(secilenler.isEmpty) { secimModu=false; } } else { secilenler.add(malz); } }); } : null, leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: kKolarcBlue.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(depoIkon, color: kKolarcBlue, size: 28)), title: Text(malz.kod, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), subtitle: Text('Raf: ${malz.raf}   •   Sıra: ${malz.sira}\nEklenme: ${malz.eklenmeTarihi}', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[600])), trailing: secimModu ? Checkbox(activeColor: kKolarcBlue, value: seciliMi, onChanged: (v){ setState((){ if (v!) { secilenler.add(malz); } else { secilenler.remove(malz); if(secilenler.isEmpty) { secimModu=false; } } }); }) : (widget.isAdmin ? SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.edit, color: kKolarcBlue), onPressed: () => manuelEkle(varOlanMalzeme: malz)) ])) : null), )); }))
+          Padding(padding: const EdgeInsets.all(12.0), child: TextField(controller: aramaKontrolcusu, onChanged: _aramaYap, decoration: const InputDecoration(labelText: 'Ürün İsmi veya Kodu Ara...', prefixIcon: Icon(Icons.search, color: kKolarcBlue)))),
+          Expanded(child: ekrandakiMalzemeler.isEmpty ? const Center(child: Text('Kayıt bulunamadı.')) : ListView.builder(padding: const EdgeInsets.symmetric(horizontal: 8), itemCount: ekrandakiMalzemeler.length, itemBuilder: (context, index) { final malz = ekrandakiMalzemeler[index]; bool seciliMi = secilenler.contains(malz); return Card(color: seciliMi ? kKolarcBlue.withValues(alpha: 0.1) : null, margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), child: ListTile(onLongPress: widget.isAdmin ? () { setState((){ secimModu = true; secilenler.add(malz); }); } : null, onTap: secimModu ? () { setState((){ if (seciliMi) { secilenler.remove(malz); if(secilenler.isEmpty) { secimModu=false; } } else { secilenler.add(malz); } }); } : null, leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: kKolarcBlue.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(depoIkon, color: kKolarcBlue, size: 28)), title: Text(malz.ad, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), subtitle: Text('Kod: ${malz.kod}\nEklenme: ${malz.eklenmeTarihi}', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[600])), trailing: secimModu ? Checkbox(activeColor: kKolarcBlue, value: seciliMi, onChanged: (v){ setState((){ if (v!) { secilenler.add(malz); } else { secilenler.remove(malz); if(secilenler.isEmpty) { secimModu=false; } } }); }) : (widget.isAdmin ? SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.edit, color: kKolarcBlue), onPressed: () => manuelEkle(varOlanMalzeme: malz)) ])) : null), )); }))
         ],
       ),
     );
@@ -1623,10 +1774,21 @@ class _TumRevizyonlarSayfasiState extends State<TumRevizyonlarSayfasi> {
           if (result != null) { 
             try { 
               File file = File(result.files.single.path!); 
-              String contents = await file.readAsString(); 
-              List<String> lines = contents.split('\n'); int e = 0; 
+              
+              List<int> bytes = await file.readAsBytes();
+              String contents = utf8.decode(bytes, allowMalformed: true);
+              if (contents.startsWith('\uFEFF')) { contents = contents.substring(1); }
+              
+              List<String> lines = contents.split(RegExp(r'\r\n|\n|\r')); 
+              int e = 0; 
+              
               for (String line in lines) { 
                 if (line.trim().isEmpty) { continue; } 
+                
+                if (line.toLowerCase().startsWith('kart') || line.toLowerCase().startsWith('makina')) {
+                  continue;
+                }
+
                 List<String> cols = line.split(RegExp(r'[;,]')); 
                 if (cols.length >= 3) { 
                   String kartArama = cols[0].trim().toUpperCase(); 
