@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart'; // Uygulamanın canlıda (release) olup olmadığını anlamak için eklendi
+import 'package:flutter/foundation.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:device_preview/device_preview.dart'; 
@@ -12,9 +12,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 // --- 🛠️ GELİŞTİRİCİ AYARLARI ---
-// Burayı true yaparsan ekranda telefon seçme menüsü çıkar.
-// false yaparsan normal tam ekran çalışır.
-// NOT: Uygulamanın APK'sını aldığında, sen burayı true unutsan bile sistem onu otomatik kapatır!
 const bool devicePreviewAcik = false; 
 
 void main() {
@@ -29,12 +26,12 @@ void main() {
 final ValueNotifier<ThemeMode> temaYoneticisi = ValueNotifier(ThemeMode.light);
 final ValueNotifier<bool> bakimPaneliniGoster = ValueNotifier(false);
 
-// --- YENİ KURUMSAL RENKLERİMİZ (Logoya Uygun) ---
-const Color kKolarcBlue = Color(0xFF26A69A); // Logo rengi: Modern Teal/Turkuaz
-const Color kKolarcOrange = Color(0xFF37474F); // Logo rengi: Kömür Grisi
+// --- KURUMSAL RENKLER ---
+const Color kKolarcBlue = Color(0xFF26A69A); 
+const Color kKolarcOrange = Color(0xFF37474F); 
 const Color kKolarcDarkBg = Color(0xFF121212); 
 
-// --- AKILLI METİN VE TARİH YARDIMCILARI ---
+// --- YARDIMCI FONKSİYONLAR ---
 String anlikTarihSaatGetir() {
   DateTime suAn = DateTime.now();
   return "${suAn.day.toString().padLeft(2, '0')}/${suAn.month.toString().padLeft(2, '0')}/${suAn.year} - ${suAn.hour.toString().padLeft(2, '0')}:${suAn.minute.toString().padLeft(2, '0')}";
@@ -46,32 +43,30 @@ DateTime tarihCozumle(String tarihStr) {
     var d = p[0].split('/'); 
     var t = p[1].split(':'); 
     return DateTime(int.parse(d[2]), int.parse(d[1]), int.parse(d[0]), int.parse(t[0]), int.parse(t[1])); 
-  } catch (e) { 
-    return DateTime(2000); 
-  } 
+  } catch (e) { return DateTime(2000); } 
 }
 
 String kelimeIlkHarfleriBuyut(String metin) {
-  if (metin.trim().isEmpty) { return metin; }
+  if (metin.trim().isEmpty) return metin;
   return metin.trim().split(' ').map((kelime) {
-    if (kelime.isEmpty) { return ''; }
+    if (kelime.isEmpty) return '';
     return kelime[0].toUpperCase() + kelime.substring(1).toLowerCase();
   }).join(' ');
 }
 
 String cumleIlkHarfBuyut(String metin) {
-  if (metin.trim().isEmpty) { return metin; }
+  if (metin.trim().isEmpty) return metin;
   String t = metin.trim();
   return t[0].toUpperCase() + t.substring(1);
 }
 
-// --- 1. ZIRHLI VERİ MODELLERİMİZ ---
+// --- VERİ MODELLERİ ---
 class Revizyon {
   String tarihSaat; String aciklama; String makinaAdi;
   Revizyon({required this.tarihSaat, required this.aciklama, required this.makinaAdi});
   Map<String, dynamic> toJson() => {'tarihSaat': tarihSaat, 'aciklama': aciklama, 'makinaAdi': makinaAdi};
   factory Revizyon.fromJson(Map<String, dynamic>? json) {
-    if (json == null) { return Revizyon(tarihSaat: 'Bilinmiyor', aciklama: 'Yok', makinaAdi: 'Genel'); }
+    if (json == null) return Revizyon(tarihSaat: 'Bilinmiyor', aciklama: 'Yok', makinaAdi: 'Genel');
     return Revizyon(tarihSaat: json['tarihSaat']?.toString() ?? 'Tarih Bilinmiyor', aciklama: json['aciklama']?.toString() ?? 'Açıklama Yok', makinaAdi: json['makinaAdi']?.toString() ?? 'Genel');
   }
 }
@@ -81,7 +76,7 @@ class Kart {
   Kart({required this.stokNo, required this.tip, required this.eklenmeTarihi, required this.revizyonlar});
   Map<String, dynamic> toJson() => {'stokNo': stokNo, 'tip': tip, 'eklenmeTarihi': eklenmeTarihi, 'revizyonlar': revizyonlar.map((r) => r.toJson()).toList()};
   factory Kart.fromJson(Map<String, dynamic>? json) {
-    if (json == null) { return Kart(stokNo: 'Bilinmeyen', tip: 'Yok', eklenmeTarihi: 'Bilinmiyor', revizyonlar: []); }
+    if (json == null) return Kart(stokNo: 'Bilinmeyen', tip: 'Yok', eklenmeTarihi: 'Bilinmiyor', revizyonlar: []);
     return Kart(stokNo: json['stokNo']?.toString() ?? 'Bilinmeyen', tip: json['tip']?.toString() ?? 'Belirtilmedi', eklenmeTarihi: json['eklenmeTarihi']?.toString() ?? 'Eski Kayıt', revizyonlar: json['revizyonlar'] != null ? (json['revizyonlar'] as List).map((r) => Revizyon.fromJson(r as Map<String, dynamic>?)).toList() : []);
   }
 }
@@ -91,7 +86,7 @@ class Makina {
   Makina({required this.kod, required this.ad, required this.eklenmeTarihi, required this.bagliKartlar});
   Map<String, dynamic> toJson() => {'kod': kod, 'ad': ad, 'eklenmeTarihi': eklenmeTarihi, 'bagliKartlar': bagliKartlar.map((k) => k.toJson()).toList()};
   factory Makina.fromJson(Map<String, dynamic>? json) {
-    if (json == null) { return Makina(kod: 'Bilinmiyor', ad: 'İsimsiz', eklenmeTarihi: 'Bilinmiyor', bagliKartlar: []); }
+    if (json == null) return Makina(kod: 'Bilinmiyor', ad: 'İsimsiz', eklenmeTarihi: 'Bilinmiyor', bagliKartlar: []);
     return Makina(kod: json['kod']?.toString() ?? 'Bilinmiyor', ad: json['ad']?.toString() ?? 'İsimsiz', eklenmeTarihi: json['eklenmeTarihi']?.toString() ?? 'Eski Kayıt', bagliKartlar: json['bagliKartlar'] != null ? (json['bagliKartlar'] as List).map((k) => Kart.fromJson(k as Map<String, dynamic>?)).toList() : []);
   }
 }
@@ -101,7 +96,7 @@ class Malzeme {
   Malzeme({required this.kod, required this.raf, required this.sira, required this.depoTipi, required this.eklenmeTarihi});
   Map<String, dynamic> toJson() => {'kod': kod, 'raf': raf, 'sira': sira, 'depoTipi': depoTipi, 'eklenmeTarihi': eklenmeTarihi};
   factory Malzeme.fromJson(Map<String, dynamic>? json) {
-    if (json == null) { return Malzeme(kod: 'Bilinmiyor', raf: '-', sira: '-', depoTipi: 'SMD', eklenmeTarihi: 'Bilinmiyor'); }
+    if (json == null) return Malzeme(kod: 'Bilinmiyor', raf: '-', sira: '-', depoTipi: 'SMD', eklenmeTarihi: 'Bilinmiyor');
     return Malzeme(kod: json['kod']?.toString() ?? 'Bilinmiyor', raf: json['raf']?.toString() ?? '-', sira: json['sira']?.toString() ?? '-', depoTipi: json['depoTipi']?.toString() ?? 'SMD', eklenmeTarihi: json['eklenmeTarihi']?.toString() ?? 'Eski Kayıt');
   }
 }
@@ -111,12 +106,12 @@ class OzelMakinaBakim {
   OzelMakinaBakim({required this.ad, required this.sonBakim, required this.siradakiBakim, required this.durum});
   Map<String, dynamic> toJson() => {'ad': ad, 'sonBakim': sonBakim, 'siradakiBakim': siradakiBakim, 'durum': durum};
   factory OzelMakinaBakim.fromJson(Map<String, dynamic>? json) {
-    if (json == null) { return OzelMakinaBakim(ad: 'Bilinmeyen', sonBakim: '-', siradakiBakim: '-', durum: 'Normal'); }
+    if (json == null) return OzelMakinaBakim(ad: 'Bilinmeyen', sonBakim: '-', siradakiBakim: '-', durum: 'Normal');
     return OzelMakinaBakim(ad: json['ad']?.toString() ?? 'Bilinmeyen', sonBakim: json['sonBakim']?.toString() ?? '-', siradakiBakim: json['siradakiBakim']?.toString() ?? '-', durum: json['durum']?.toString() ?? 'Normal');
   }
 }
 
-// --- GLOBAL DEĞİŞKENLER VE KAYIT SİSTEMİ ---
+// --- GLOBAL DEĞİŞKENLER ---
 List<Kart> tumKartlarDeposu = []; List<Makina> tumMakinalar = []; List<Kart> arsivlenmisKartlar = []; List<Makina> arsivlenmisMakinalar = []; List<Malzeme> smdMalzemeler = []; List<Malzeme> bacakliMalzemeler = []; List<Malzeme> arsivlenmisMalzemeler = [];
 
 List<OzelMakinaBakim> ozelBakimListesi = [
@@ -138,7 +133,7 @@ Future<void> verileriKaydet() async {
   await prefs.setString('ozelBakimListesi', jsonEncode(ozelBakimListesi.map((m) => m.toJson()).toList()));
 }
 
-// --- 2. UYGULAMA ANA İSKELETİ VE MODERN TEMA ---
+// --- UYGULAMA ANA YAPISI ---
 class MakinaTakipUygulamasi extends StatelessWidget {
   const MakinaTakipUygulamasi({super.key});
 
@@ -150,9 +145,7 @@ class MakinaTakipUygulamasi extends StatelessWidget {
         return MaterialApp(
           useInheritedMediaQuery: true, locale: DevicePreview.locale(context), builder: DevicePreview.appBuilder, debugShowCheckedModeBanner: false,
           title: 'Makina Takip Uygulaması',
-          
           theme: ThemeData.light().copyWith(
-            useMaterial3: true,
             primaryColor: kKolarcBlue,
             scaffoldBackgroundColor: Colors.grey[100],
             colorScheme: const ColorScheme.light(primary: kKolarcBlue, secondary: kKolarcOrange),
@@ -165,9 +158,7 @@ class MakinaTakipUygulamasi extends StatelessWidget {
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(backgroundColor: kKolarcBlue, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12))),
           ),
-          
           darkTheme: ThemeData.dark().copyWith(
-            useMaterial3: true,
             primaryColor: kKolarcBlue,
             scaffoldBackgroundColor: kKolarcDarkBg,
             colorScheme: const ColorScheme.dark(primary: kKolarcBlue, secondary: kKolarcOrange),
@@ -201,10 +192,8 @@ class _AcilisEkraniState extends State<AcilisEkrani> {
   Future<void> hafizadanVerileriYukle() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
       bool isDark = prefs.getBool('isDarkTheme') ?? false;
       temaYoneticisi.value = isDark ? ThemeMode.dark : ThemeMode.light;
-      
       bakimPaneliniGoster.value = prefs.getBool('bakimPaneliGoster') ?? false;
 
       if (prefs.getString('kayitliKartlar') != null) { tumKartlarDeposu = List<Kart>.from(jsonDecode(prefs.getString('kayitliKartlar')!).map((x) => Kart.fromJson(x))); }
@@ -214,31 +203,26 @@ class _AcilisEkraniState extends State<AcilisEkrani> {
       if (prefs.getString('smdMalzemeler') != null) { smdMalzemeler = List<Malzeme>.from(jsonDecode(prefs.getString('smdMalzemeler')!).map((x) => Malzeme.fromJson(x))); }
       if (prefs.getString('bacakliMalzemeler') != null) { bacakliMalzemeler = List<Malzeme>.from(jsonDecode(prefs.getString('bacakliMalzemeler')!).map((x) => Malzeme.fromJson(x))); }
       if (prefs.getString('arsivliMalzemeler') != null) { arsivlenmisMalzemeler = List<Malzeme>.from(jsonDecode(prefs.getString('arsivliMalzemeler')!).map((x) => Malzeme.fromJson(x))); }
-      
-      if (prefs.getString('ozelBakimListesi') != null) {
-        ozelBakimListesi = List<OzelMakinaBakim>.from(jsonDecode(prefs.getString('ozelBakimListesi')!).map((x) => OzelMakinaBakim.fromJson(x)));
-      }
-    } catch (e) { 
-      tumKartlarDeposu = []; tumMakinalar = []; arsivlenmisKartlar = []; arsivlenmisMakinalar = []; smdMalzemeler = []; bacakliMalzemeler = []; arsivlenmisMalzemeler = []; 
-    }
+      if (prefs.getString('ozelBakimListesi') != null) { ozelBakimListesi = List<OzelMakinaBakim>.from(jsonDecode(prefs.getString('ozelBakimListesi')!).map((x) => OzelMakinaBakim.fromJson(x))); }
+    } catch (e) { }
     if (mounted) { Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AnaGezinmeSayfasi())); }
   }
   @override
-  Widget build(BuildContext context) { return Scaffold(body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: const [CircularProgressIndicator(color: kKolarcBlue), SizedBox(height: 20), Text('Sistem Başlatılıyor...', style: TextStyle(fontWeight: FontWeight.bold))]))); }
+  Widget build(BuildContext context) { return const Scaffold(body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(color: kKolarcBlue), SizedBox(height: 20), Text('Sistem Başlatılıyor...', style: TextStyle(fontWeight: FontWeight.bold))]))); }
 }
 
 Widget kolarcAppBarBackground() {
   return Container(
     decoration: const BoxDecoration(
       gradient: LinearGradient(
-        colors: [Color(0xFF26A69A), Color(0xFF00796B), Color(0xFF004D40)], // Teal ve Koyu Yeşil Tonları
+        colors: [Color(0xFF26A69A), Color(0xFF00796B), Color(0xFF004D40)], 
         begin: Alignment.topLeft, end: Alignment.bottomRight,
       ),
     ),
   );
 }
 
-// --- YENİ EKLENEN: GÖRSEL KULLANIM KILAVUZU SAYFASI ---
+// --- KULLANIM KILAVUZU SAYFASI ---
 class KullanimKilavuzuSayfasi extends StatelessWidget {
   const KullanimKilavuzuSayfasi({super.key});
 
@@ -300,23 +284,14 @@ class KullanimKilavuzuSayfasi extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-
           _kilavuzKarti(context, '1. Yönetici (Admin) Girişi', 'Sistem varsayılan olarak "İzleme Modunda" başlar. Yeni bir makina eklemek, kart bağlamak veya veri silmek için üst sağdaki "Giriş" ikonuna tıklayıp şifreyi (1234) girmelisiniz. Admin olduğunuzda ekranın sağ alt köşesinde ekleme (+) butonları belirecektir.', Icons.admin_panel_settings, Colors.redAccent),
-          
           _kilavuzKarti(context, '2. Süper Arama Motoru', 'Ekranın üstündeki Büyüteç ikonuna basarak sistemdeki HER ŞEYİ tek bir yerden arayabilirsiniz. Bir kod veya isim yazdığınızda sistem; depodaki kartları, makinaları, makinalara takılı kartları ve SMD/Bacaklı malzemeleri saniyeler içinde tarayıp karşınıza getirir.', Icons.search, kKolarcBlue),
-
           _kilavuzKarti(context, '3. Ana Ekran Paneli', 'Ortadaki 6 büyük renkli kutu deponuzun anlık özetidir. Herhangi bir kutuya tıkladığınızda o bölümün detaylı listesine ulaşırsınız. (Örneğin "Toplam Makina" kutusuna tıklayarak makinaların listesine gidebilirsiniz).', Icons.dashboard, kKolarcOrange),
-
           _kilavuzKarti(context, '4. Raporlama (Excel & PDF)', 'Ana sayfadaki Excel veya PDF butonlarına basarak sistemin o anki tam özetini (Tüm makinalar, işlem gören kartlar ve revizyon geçmişi) tek tıkla resmi bir rapor halinde indirebilirsiniz.', Icons.picture_as_pdf, Colors.red),
-
           _kilavuzKarti(context, '5. Makina ve Kart Yönetimi', 'Makinalar listesinden bir makinaya tıkladığınızda içine girebilir ve "Depodan Kart Ekle" diyerek sistemdeki boş bir kartı o makinaya bağlayabilirsiniz. Bir kart makinaya bağlandığında, ana ekranda "Takılı Kartlar" bölümüne geçer.', Icons.precision_manufacturing, Colors.indigo),
-
           _kilavuzKarti(context, '6. Revizyon (İşlem) Kaydetme', 'Bir karta müdahale ettiğinizde (lehim, parça değişimi vs.), o kartın detayına girip "Revizyon Ekle" diyebilirsiniz. Hangi makinada ne işlem yaptığınızı yazdığınızda, sistem bunu tarih/saat ile birlikte sonsuza dek kayıt altına alır.', Icons.history_edu, Colors.purple),
-
           _kilavuzKarti(context, '7. Çöp Kutusu (Sistem Arşivi)', 'Bir makina, kart veya malzemeyi sildiğinizde aslında tamamen silinmez. Üst çubuktaki "Çöp Kutusu" ikonuna basarak Sistem Arşivine gidebilirsiniz. Buradan yanlışlıkla sildiğiniz verileri geri yükleyebilir veya kalıcı olarak silebilirsiniz.', Icons.delete_sweep, kKolarcBlue),
-
           _kilavuzKarti(context, '8. Sistemi Yedekleme ve Aktarma', 'Ekranın en altındaki "Yedekle" butonuna basarak tüm fabrikanın verisini küçük bir (.json) dosyası olarak indirebilirsiniz. Bu dosyayı flash bellek veya WhatsApp ile başka bir bilgisayara/tablete atıp, oradaki uygulamadan "Yükle" diyerek tüm sistemi saniyeler içinde yeni cihaza aktarabilirsiniz.', Icons.cloud_sync, Colors.green),
-
           const SizedBox(height: 20),
         ],
       ),
@@ -324,7 +299,7 @@ class KullanimKilavuzuSayfasi extends StatelessWidget {
   }
 }
 
-// --- 3. ANA SAYFA ---
+// --- ANA GEZİNME VE DASHBOARD ---
 class AnaGezinmeSayfasi extends StatefulWidget {
   const AnaGezinmeSayfasi({super.key});
   @override
@@ -333,26 +308,6 @@ class AnaGezinmeSayfasi extends StatefulWidget {
 
 class _AnaGezinmeSayfasiState extends State<AnaGezinmeSayfasi> {
   bool isAdmin = false; 
-
-  void adminGirisiYap() {
-    TextEditingController sifreKontrolcusu = TextEditingController();
-    void girisTetikle() {
-      if (sifreKontrolcusu.text == '1234') { 
-        setState(() => isAdmin = true); Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Admin yetkileri aktif!'), backgroundColor: Colors.green));
-      } else { 
-        Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hatalı şifre!'), backgroundColor: Colors.red)); 
-      }
-    }
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: const [Icon(Icons.admin_panel_settings, color: kKolarcBlue), SizedBox(width: 10), Text('Yönetici Girişi')]),
-        content: TextField(controller: sifreKontrolcusu, obscureText: true, decoration: const InputDecoration(hintText: 'Şifrenizi girin', prefixIcon: Icon(Icons.lock)), textInputAction: TextInputAction.done, onSubmitted: (_) => girisTetikle()),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal', style: TextStyle(color: Colors.red))), ElevatedButton(onPressed: girisTetikle, child: const Text('Giriş Yap'))],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -371,13 +326,12 @@ class _AnaGezinmeSayfasiState extends State<AnaGezinmeSayfasi> {
               flex: 2,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                reverse: true, // Butonları sağa yaslar
+                reverse: true,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(icon: const Icon(Icons.help_outline, color: Colors.lightBlueAccent), tooltip: 'Kullanım Kılavuzu', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const KullanimKilavuzuSayfasi()))),
                     const SizedBox(width: 5),
-                    
                     IconButton(icon: const Icon(Icons.search, color: Colors.white), tooltip: 'Sistemde Ara', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SuperAramaSayfasi(isAdmin: isAdmin))).then((_) => setState((){}))),
                     IconButton(icon: const Icon(Icons.delete_sweep, color: Colors.white70), tooltip: 'Sistem Arşivi', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ArsivSayfasi(isAdmin: isAdmin))).then((_) => setState((){}))),
                     IconButton(
@@ -397,7 +351,27 @@ class _AnaGezinmeSayfasiState extends State<AnaGezinmeSayfasi> {
         ),
         actions: const [SizedBox.shrink()], 
       ),
-      body: OzetPaneliSayfasi(isAdmin: isAdmin), 
+      body: OzetPaneliSayfasi(isAdmin: isAdmin),
+    );
+  }
+
+  void adminGirisiYap() {
+    TextEditingController sifreKontrolcusu = TextEditingController();
+    void girisTetikle() {
+      if (sifreKontrolcusu.text == '1234') { 
+        setState(() => isAdmin = true); Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Admin yetkileri aktif!'), backgroundColor: Colors.green));
+      } else { 
+        Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hatalı şifre!'), backgroundColor: Colors.red)); 
+      }
+    }
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [Icon(Icons.admin_panel_settings, color: kKolarcBlue), SizedBox(width: 10), Text('Yönetici Girişi')]),
+        content: TextField(controller: sifreKontrolcusu, obscureText: true, decoration: const InputDecoration(hintText: 'Şifrenizi girin', prefixIcon: Icon(Icons.lock)), textInputAction: TextInputAction.done, onSubmitted: (_) => girisTetikle()),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal', style: TextStyle(color: Colors.red))), ElevatedButton(onPressed: girisTetikle, child: const Text('Giriş Yap'))],
+      ),
     );
   }
 }
@@ -616,7 +590,7 @@ class _ArsivSayfasiState extends State<ArsivSayfasi> with SingleTickerProviderSt
   }
 }
 
-// --- 4. ÖZET PANELİ (DASHBOARD) ---
+// --- DÜZELTİLMİŞ ÖZET PANELİ (WINDOWS & iOS UYUMLU) ---
 class OzetPaneliSayfasi extends StatefulWidget {
   final bool isAdmin;
   const OzetPaneliSayfasi({super.key, required this.isAdmin});
@@ -697,6 +671,7 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
     }); 
   }
 
+  // ✅ DÜZELTİLDİ: Windows (Farklı Kaydet) & iOS (Paylaş) Excel
   Future<void> excelRaporuIndir(BuildContext context) async {
     String csvVerisi = "Makina Adi;Makina Kodu;Bagli Kart Sayisi;Kart Ismi;Kart Kodu;Revizyon Sayisi;Eklenme Tarihi\n";
     for (var makina in tumMakinalar) { 
@@ -709,17 +684,33 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
       } 
     }
     try { 
-      final dir = await getTemporaryDirectory();
-      final dosyaYolu = '${dir.path}/Sistem_Raporu.csv';
-      File dosya = File(dosyaYolu);
-      await dosya.writeAsString('\uFEFF$csvVerisi', encoding: utf8);
-      
-      await Share.shareXFiles([XFile(dosyaYolu)], text: 'Sistem Raporu');
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        String? kayitYeri = await FilePicker.platform.saveFile(
+          dialogTitle: 'Excel Raporunu Kaydet',
+          fileName: 'Sistem_Raporu.csv',
+          type: FileType.custom,
+          allowedExtensions: ['csv'],
+        );
+        if (kayitYeri != null) {
+          File dosya = File(kayitYeri);
+          await dosya.writeAsString('\uFEFF$csvVerisi', encoding: utf8); 
+          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Excel başarıyla bilgisayara kaydedildi!'), backgroundColor: Colors.green));
+        }
+      } else {
+        final dir = await getApplicationDocumentsDirectory(); 
+        final dosyaYolu = '${dir.path}/Sistem_Raporu.csv';
+        File dosya = File(dosyaYolu);
+        await dosya.writeAsString('\uFEFF$csvVerisi', encoding: utf8); 
+        
+        await Future.delayed(const Duration(milliseconds: 500));
+        await Share.shareXFiles([XFile(dosyaYolu)]);
+      }
     } catch (e) { 
       if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rapor oluşturulamadı.'), backgroundColor: Colors.red));
     }
   }
 
+  // ✅ DÜZELTİLDİ: Windows (Farklı Kaydet) & iOS (Paylaş) PDF
   Future<void> _pdfRaporuOlustur(BuildContext context) async {
     showDialog(context: context, barrierDismissible: false, builder: (c) => const Center(child: CircularProgressIndicator(color: kKolarcBlue)));
 
@@ -849,16 +840,31 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
 
       Navigator.pop(context); 
       
-      final dir = await getTemporaryDirectory();
-      final dosyaYolu = '${dir.path}/Sistem_Raporu.pdf';
-      File dosya = File(dosyaYolu);
-      await dosya.writeAsBytes(await pdf.save());
-      
-      await Share.shareXFiles([XFile(dosyaYolu)], text: 'Sistem Raporu');
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        String? kayitYeri = await FilePicker.platform.saveFile(
+          dialogTitle: 'PDF Raporunu Kaydet',
+          fileName: 'Sistem_Raporu.pdf',
+          type: FileType.custom,
+          allowedExtensions: ['pdf'],
+        );
+        if (kayitYeri != null) {
+          File dosya = File(kayitYeri);
+          await dosya.writeAsBytes(await pdf.save());
+          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF başarıyla bilgisayara kaydedildi!'), backgroundColor: Colors.green));
+        }
+      } else {
+        final dir = await getApplicationDocumentsDirectory();
+        final dosyaYolu = '${dir.path}/Sistem_Raporu.pdf';
+        File dosya = File(dosyaYolu);
+        await dosya.writeAsBytes(await pdf.save());
+        
+        await Future.delayed(const Duration(milliseconds: 500));
+        await Share.shareXFiles([XFile(dosyaYolu)]);
+      }
 
     } catch (e) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF oluşturulurken hata oluştu.'), backgroundColor: Colors.red));
+      if(context.mounted) Navigator.pop(context);
+      if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF oluşturulurken hata oluştu.'), backgroundColor: Colors.red));
     }
   }
 
@@ -883,6 +889,7 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
     );
   }
 
+  // ✅ DÜZELTİLDİ: Windows (Farklı Kaydet) & iOS (Paylaş) Yedekleme
   Future<void> _sistemiYedekle(BuildContext context) async {
     try {
       Map<String, dynamic> tamYedek = {
@@ -899,12 +906,27 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
       };
       String jsonVerisi = jsonEncode(tamYedek);
       
-      final dir = await getTemporaryDirectory();
-      final dosyaYolu = '${dir.path}/Sistem_Yedek.json';
-      File dosya = File(dosyaYolu);
-      await dosya.writeAsString(jsonVerisi, encoding: utf8);
-      
-      await Share.shareXFiles([XFile(dosyaYolu)], text: 'Sistem Yedeği (Bu dosyayı güvenle saklayın)');
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        String? kayitYeri = await FilePicker.platform.saveFile(
+          dialogTitle: 'Yedeği Nereye Kaydetmek İstersiniz?',
+          fileName: 'Sistem_Yedek.json',
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
+        if (kayitYeri != null) {
+          File dosya = File(kayitYeri);
+          await dosya.writeAsString(jsonVerisi, encoding: utf8);
+          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Yedek başarıyla bilgisayara kaydedildi!'), backgroundColor: Colors.green));
+        }
+      } else {
+        final dir = await getApplicationDocumentsDirectory();
+        final dosyaYolu = '${dir.path}/Sistem_Yedek.json';
+        File dosya = File(dosyaYolu);
+        await dosya.writeAsString(jsonVerisi, encoding: utf8);
+        
+        await Future.delayed(const Duration(milliseconds: 500));
+        await Share.shareXFiles([XFile(dosyaYolu)]);
+      }
     } catch (e) {
       if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Yedekleme sırasında bir hata oluştu.'), backgroundColor: Colors.red)); }
     }
@@ -1076,7 +1098,7 @@ class _OzetPaneliSayfasiState extends State<OzetPaneliSayfasi> {
                         builder: (context, aktifMi, child) {
                           return Switch(
                             value: aktifMi, 
-                            activeColor: kKolarcBlue,
+                            activeThumbColor: kKolarcBlue,
                             onChanged: (v) async { 
                               bakimPaneliniGoster.value = v; 
                               final prefs = await SharedPreferences.getInstance();
