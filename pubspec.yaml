@@ -4,7 +4,7 @@ description: Kolarc Makina Takip Uygulaması # Projenizin kısa açıklaması
 publish_to: 'none' # pub.dev'de yayınlamak istemiyorsanız bu satırı tutun
 
 # Uygulamanızın sürümü ve yapı numarası.
-version: 1.0.0+2 # Sürüm: üç nokta ile ayrılmış üç sayı + isteğe bağlı yapı numarası
+version: 1.0.0+5 # Sürüm: üç nokta ile ayrılmış üç sayı + isteğe bağlı yapı numarası
 
 environment:
   sdk: ^3.0.0 # Projenizin Dart SDK sürüm gereksinimi
