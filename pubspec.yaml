@@ -4,7 +4,7 @@ description: Kolarc Makina Takip Uygulaması # Projenizin kısa açıklaması
 publish_to: 'none' # pub.dev'de yayınlamak istemiyorsanız bu satırı tutun
 
 # Uygulamanızın sürümü ve yapı numarası.
-version: 2.0.0+20 # Sürüm: üç nokta ile ayrılmış üç sayı + isteğe bağlı yapı numarası
+version: 2.0.0+21 # Sürüm: üç nokta ile ayrılmış üç sayı + isteğe bağlı yapı numarası
 
 environment:
   sdk: ^3.0.0 # Projenizin Dart SDK sürüm gereksinimi
@@ -23,12 +23,14 @@ dependencies:
  
 dev_dependencies:
   flutter_test:
-    sdk: flutter # Flutter test paketini bağımlılık olarak ekler
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1 # BUNU EKLE
 
-  # flutter_lints paketini kullanarak önerilen kodlama kurallarını uygulayabilirsiniz.
-  flutter_lints: ^2.0.0 # flutter_lints paketi, daha iyi kodlama uygulamalarını teşvik etmek için önerilen bir lint seti içerir.
-
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/logo.png
+# EN ALTA ŞU BLOĞU EKLE:
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png" # Seninkinin adı logo.png idi, ona yol veriyoruz.
+   
+ 

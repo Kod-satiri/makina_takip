@@ -19,8 +19,10 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>makina_takip</string>
-	<key>CFBundlePackageType</key>
+	<key>CFBundleDisplayName</key>
+	<string>DepoZeka</string>
+	<key>CFBundleName</key>
+	<string>DepoZeka</string>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
