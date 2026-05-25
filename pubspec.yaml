@@ -31,6 +31,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/logo.png" # Seninkinin adı logo.png idi, ona yol veriyoruz.
-   
+  image_path: "assets/logo.png"
+  remove_alpha_ios: true          # iOS için saydamlığı zorla kaldırır
+  background_color_ios: "#0F172A" # Logonun arkasına senin koyu lacivert rengini atar
  
