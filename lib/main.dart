@@ -131,8 +131,8 @@ class DepoZekaLogo extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Image.asset(
-            'assets/logo.png',
-            height: size * 3.5,
+            'assets/depo_logo.png', // DOSYA ADI depo_logo.png OLARAK GÜNCELLENDİ
+            height: size * 3.5, 
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) {
               return Icon(Icons.memory, color: Colors.white, size: size * 3.5);
@@ -532,7 +532,7 @@ class _AcilisEkraniState extends State<AcilisEkrani> with SingleTickerProviderSt
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Image.asset(
-                      'assets/logo.png',
+                      'assets/depo_logo.png', // DOSYA ADI depo_logo.png OLARAK GÜNCELLENDİ
                       width: 440, 
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
@@ -3175,7 +3175,7 @@ class _PcbDeposuSayfasiState extends State<PcbDeposuSayfasi> {
                       leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.layers, color: Colors.teal, size: 28)), 
                       title: Text(pcb.stokNo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), 
                       subtitle: Text('Kod: ${pcb.isim}\nEklenme: ${pcb.eklenmeTarihi}', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[700], fontSize: 13)), 
-                      trailing: secimModu ? Checkbox(activeColor: kDepoZekaPrimary, value: seciliMi, onChanged: (v){ setState((){ if (v!) { secilenler.add(pcb); } else { secilenler.remove(pcb); if(secilenler.isEmpty) { secimModu=false; } } }); }) : (widget.isAdmin ? IconButton(icon: const Icon(Icons.edit, color: kDepoZekaPrimary), onPressed: () => pcbPenceresiAc(varOlanPcb: pcb)) : null), 
+                      trailing: secimModu ? Checkbox(activeColor: kDepoZekaPrimary, value: seciliMi, onChanged: (v){ setState((){ if (v!) { secilenler.add(pcb); } else { secilenler.remove(pcb); if(secilenler.isEmpty) secimModu=false; } }); }) : (widget.isAdmin ? IconButton(icon: const Icon(Icons.edit, color: kDepoZekaPrimary), onPressed: () => pcbPenceresiAc(varOlanPcb: pcb)) : null), 
                     )
                   ); 
                 }
@@ -3300,7 +3300,6 @@ class _AkilliAsistanSayfasiState extends State<AkilliAsistanSayfasi> {
         cvp += "Bulunduğu Yer: ${n.depoTipi}\n\n";
       }
       else if (n is PcbKart) {
-        // İsim ve kod yer değiştirdiği için mantığı da düzelttik
         cvp += "🟩 PCB:\nİsmi: ${n.stokNo}\nKod: ${n.isim}\nEklenme Tarihi: ${n.eklenmeTarihi}\n\n";
       }
     }
@@ -3369,4 +3368,3 @@ class _AkilliAsistanSayfasiState extends State<AkilliAsistanSayfasi> {
     );
   }
 }
-// SON SÜSLÜ PARANTEZ BURADA BİTİYOR, LÜTFEN EKSİK KOPYALAMAYIN

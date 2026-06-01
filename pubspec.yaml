@@ -1,20 +1,18 @@
-name: kolarc_makina_takip # Projenizin adı (küçük harfler, alt çizgiler)
-description: Kolarc Makina Takip Uygulaması # Projenizin kısa açıklaması
-# pub.dev'e yanlışlıkla yayınlanmasını önlemek için aşağıdaki satır
-publish_to: 'none' # pub.dev'de yayınlamak istemiyorsanız bu satırı tutun
+name: kolarc_makina_takip
+description: Kolarc Makina Takip Uygulaması
+publish_to: 'none'
 
-# Uygulamanızın sürümü ve yapı numarası.
-version: 2.0.0+01 # Sürüm: üç nokta ile ayrılmış üç sayı + isteğe bağlı yapı numarası
+version: 2.0.0+2
 
 environment:
-  sdk: ^3.0.0 # Projenizin Dart SDK sürüm gereksinimi
+  sdk: ^3.0.0
 
 dependencies:
   flutter:
     sdk: flutter
 
   shared_preferences: ^2.2.0
-  file_picker: ^6.1.1 # (Veya sendeki sürümü)
+  file_picker: ^6.1.1
   device_preview: ^1.1.0
   pdf: ^3.10.4
   printing: ^5.11.0
@@ -25,13 +23,17 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
-  flutter_launcher_icons: ^0.13.1 # BUNU EKLE
+  flutter_launcher_icons: ^0.13.1
 
-# EN ALTA ŞU BLOĞU EKLE:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/logo.png"
-  remove_alpha_ios: true          # iOS için saydamlığı zorla kaldırır
-  background_color_ios: "#0F172A" # Logonun arkasına senin koyu lacivert rengini atar
- 
+  image_path: "assets/depo_logo.png"
+  remove_alpha_ios: true          
+  background_color_ios: "#0F172A" 
+
+# İŞTE EKSİK OLAN VE SİMGELERİ/RESİMLERİ GETİRECEK ASIL KISIM:
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/depo_logo.png
